@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#7779B9">
+  <title>Моё хранилище</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --background:#7779B9; --card:#8587C5; --button:#202844;
+      --hover:#303F83; --lilac:#B4A1D5; --burgundy:#704567;
+      --text:#fff; --muted:#E2E3F5; --border:rgba(255,255,255,.22);
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; padding:28px 16px 50px; min-height:100vh;
+      background:var(--background); color:var(--text);
+      font:16px/1.5 Arial, sans-serif;
+    }
+    .wrap { max-width:980px; margin:auto; }
+    header { text-align:center; margin:10px 0 26px; }
+    h1 { margin:0 0 5px; font-size:clamp(26px,5vw,38px); }
+    header p { margin:0; color:var(--muted); }
+    .panel {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:16px; padding:18px; margin:0 0 20px;
+      box-shadow:0 8px 24px rgba(25,30,65,.12);
+    }
+    .auth-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    input, button { font:inherit; }
+    input[type=email], input[type=password] {
+      width:100%; min-width:0; padding:12px; border-radius:9px;
+      border:1px solid var(--border); background:#fff; color:#202844;
+    }
+    button, .button {
+      display:inline-block; border:0; border-radius:9px; padding:11px 15px;
+      background:var(--button); color:white; cursor:pointer; text-decoration:none;
+      font-weight:600;
+    }
+    button:hover, .button:hover { background:var(--hover); }
+    button:disabled { opacity:.55; cursor:wait; }
+    .auth-actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:10px; }
+    .status { color:var(--muted); margin:10px 0 0; overflow-wrap:anywhere; }
+    .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .toolbar h2 { margin:0; font-size:21px; }
+    .folders { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .folder {
+      background:var(--card); border:1px solid var(--border); border-radius:15px;
+      padding:17px; min-width:0; box-shadow:0 7px 20px rgba(25,30,65,.10);
+    }
+    .folder h3 { margin:0 0 4px; font-size:20px; overflow-wrap:anywhere; }
+    .folder .hint { color:var(--muted); font-size:14px; margin:0 0 13px; }
+    .folder-actions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    .folder input[type=file] { display:none; }
+    .file-list { border-top:1px solid var(--border); padding-top:10px; }
+    .file {
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      padding:9px 0; border-bottom:1px solid rgba(255,255,255,.13);
+    }
+    .file:last-child { border-bottom:0; }
+    .file-name { min-width:0; overflow-wrap:anywhere; font-size:14px; }
+    .file-actions { display:flex; flex-shrink:0; gap:6px; }
+    .small { padding:7px 10px; font-size:13px; }
+    .empty { color:var(--muted); font-size:14px; }
+    .note { font-size:13px; color:var(--muted); margin-top:16px; }
+    .hidden { display:none !important; }
+    @media(max-width:650px) {
+      .folders { grid-template-columns:1fr; }
+      .auth-grid { grid-template-columns:1fr; }
+      .toolbar { align-items:flex-start; flex-direction:column; }
+      .file { align-items:flex-start; flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📁 Моё хранилище</h1>
+    <p>Личные документы, фотографии и другие файлы</p>
+  </header>
+
+  <section class="panel" id="authPanel">
+    <h2 style="margin-top:0">Вход в хранилище</h2>
+    <div class="auth-grid">
+      <input id="email" type="email" autocomplete="username" placeholder="Электронная почта">
+      <input id="password" type="password" autocomplete="current-password" placeholder="Пароль">
+    </div>
+    <div class="auth-actions">
+      <button id="signInBtn">Войти</button>
+      <button id="signUpBtn">Создать аккаунт</button>
+    </div>
+    <p class="status" id="authStatus">Сначала войдите или создайте аккаунт.</p>
+  </section>
+
+  <section id="storagePanel" class="hidden">
+    <div class="panel toolbar">
+      <div>
+        <h2>Мои папки</h2>
+        <div class="status" id="userLabel"></div>
+      </div>
+      <button id="signOutBtn">Выйти</button>
+    </div>
+    <div class="folders" id="folders"></div>
+    <p class="note">Файлы сохраняются в облачном хранилище Supabase, а не в памяти браузера. Максимальный размер одного файла определяется настройкой вашего хранилища.</p>
+  </section>
+</div>
+
+<script>
+  // 1. Вставьте адрес своего проекта Supabase.
+  const SUPABASE_URL = "ВСТАВЬТЕ_СЮДА_PROJECT_URL";
+
+  // 2. Вставьте Publishable key (или старый anon public key) из Supabase → Project Settings → API Keys.
+  // Никогда не вставляйте сюда secret/service_role key.
+  const SUPABASE_KEY = "ВСТАВЬТЕ_СЮДА_PUBLISHABLE_KEY";
+
+  // Имя приватного Storage bucket, который нужно создать в Supabase.
+  const BUCKET = "personal-archive";
+
+  // Названия папок можно менять здесь.
+  const FOLDERS = [
+    { id: "folder-1", name: "Документы", hint: "PDF, Word и другие документы" },
+    { id: "folder-2", name: "Фотографии", hint: "Фотографии и изображения" },
+    { id: "folder-3", name: "Видео", hint: "Видеофайлы" },
+    { id: "folder-4", name: "Музыка и аудио", hint: "MP3 и другие аудиофайлы" },
+    { id: "folder-5", name: "Разное", hint: "Остальные файлы" }
+  ];
+
+  const $ = id => document.getElementById(id);
+  let supabaseClient = null;
+  let currentUser = null;
+
+  function setAuthStatus(message) { $("authStatus").textContent = message; }
+
+  function initClient() {
+    if (!window.supabase) throw new Error("Не удалось загрузить библиотеку Supabase. Проверьте подключение к интернету.");
+    if (SUPABASE_URL.includes("ВСТАВЬТЕ") || SUPABASE_KEY.includes("ВСТАВЬТЕ")) {
+      throw new Error("Сначала укажите SUPABASE_URL и SUPABASE_KEY в начале кода.");
+    }
+    if (!supabaseClient) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      supabaseClient.auth.onAuthStateChange((_event, session) => {
+        currentUser = session?.user || null;
+        showApp();
+      });
+    }
+    return supabaseClient;
+  }
+
+  function showApp() {
+    const loggedIn = !!currentUser;
+    $("authPanel").classList.toggle("hidden", loggedIn);
+    $("storagePanel").classList.toggle("hidden", !loggedIn);
+    if (loggedIn) {
+      $("userLabel").textContent = currentUser.email || "Вы вошли в систему";
+      renderFolders();
+    }
+  }
+
+  async function signIn() {
+    try {
+      const client = initClient();
+      const email = $("email").value.trim();
+      const password = $("password").value;
+      if (!email || !password) return setAuthStatus("Введите электронную почту и пароль.");
+      $("signInBtn").disabled = true;
+      const { error } = await client.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      setAuthStatus("Вход выполнен.");
+    } catch (e) { setAuthStatus("Ошибка: " + e.message); }
+    finally { $("signInBtn").disabled = false; }
+  }
+
+  async function signUp() {
+    try {
+      const client = initClient();
+      const email = $("email").value.trim();
+      const password = $("password").value;
+      if (!email || !password) return setAuthStatus("Введите электронную почту и пароль.");
+      if (password.length < 8) return setAuthStatus("Пароль должен содержать не менее 8 символов.");
+      $("signUpBtn").disabled = true;
+      const { data, error } = await client.auth.signUp({ email, password });
+      if (error) throw error;
+      setAuthStatus(data.session
+        ? "Аккаунт создан. Вы вошли в систему."
+        : "Аккаунт создан. Проверьте почту и подтвердите регистрацию, затем войдите.");
+    } catch (e) { setAuthStatus("Ошибка: " + e.message); }
+    finally { $("signUpBtn").disabled = false; }
+  }
+
+  async function signOut() {
+    if (!supabaseClient) return;
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) alert("Не удалось выйти: " + error.message);
+  }
+
+  function renderFolders() {
+    $("folders").innerHTML = "";
+    FOLDERS.forEach(folder => {
+      const section = document.createElement("section");
+      section.className = "folder";
+      const title = document.createElement("h3");
+      title.textContent = "📂 " + folder.name;
+      const hint = document.createElement("p");
+      hint.className = "hint";
+      hint.textContent = folder.hint;
+      const actions = document.createElement("div");
+      actions.className = "folder-actions";
+      const input = document.createElement("input");
+      input.type = "file";
+      input.multiple = true;
+      input.id = "upload-" + folder.id;
+      const label = document.createElement("label");
+      label.className = "button";
+      label.htmlFor = input.id;
+      label.textContent = "＋ Добавить файлы";
+      input.addEventListener("change", () => uploadFiles(folder, input));
+      const refresh = document.createElement("button");
+      refresh.className = "small";
+      refresh.textContent = "Обновить";
+      refresh.addEventListener("click", () => loadFiles(folder));
+      actions.append(label, input, refresh);
+      const list = document.createElement("div");
+      list.className = "file-list";
+      list.id = "list-" + folder.id;
+      list.innerHTML = '<div class="empty">Загрузка списка...</div>';
+      section.append(title, hint, actions, list);
+      $("folders").append(section);
+      loadFiles(folder);
+    });
+  }
+
+  async function loadFiles(folder) {
+    const list = $("list-" + folder.id);
+    if (!currentUser) return;
+    list.innerHTML = '<div class="empty">Загрузка...</div>';
+    const path = currentUser.id + "/" + folder.id;
+    const { data, error } = await supabaseClient.storage.from(BUCKET)
+      .list(path, { limit: 200, sortBy: { column: "name", order: "asc" } });
+    if (error) {
+      list.textContent = "Ошибка загрузки: " + error.message;
+      return;
+    }
+    const files = (data || []).filter(item => item.name && !item.name.startsWith("."));
+    if (!files.length) {
+      list.innerHTML = '<div class="empty">Папка пока пуста.</div>';
+      return;
+    }
+    list.innerHTML = "";
+    for (const item of files) {
+      const row = document.createElement("div");
+      row.className = "file";
+      const name = document.createElement("div");
+      name.className = "file-name";
+      name.textContent = displayFileName(item.name);
+      const controls = document.createElement("div");
+      controls.className = "file-actions";
+      const open = document.createElement("button");
+      open.className = "small";
+      open.textContent = "Открыть";
+      open.addEventListener("click", () => openFile(folder, item.name));
+      const del = document.createElement("button");
+      del.className = "small";
+      del.textContent = "Удалить";
+      del.addEventListener("click", () => deleteFile(folder, item.name));
+      controls.append(open, del);
+      row.append(name, controls);
+      list.append(row);
+    }
+  }
+
+  function displayFileName(storedName) {
+    const underscore = storedName.indexOf("_");
+    return underscore >= 0 ? storedName.slice(underscore + 1) : storedName;
+  }
+
+  async function uploadFiles(folder, input) {
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+    for (const file of files) {
+      const safeName = file.name.replace(/[\\/]/g, "_");
+      const objectName = Date.now() + "-" + crypto.randomUUID() + "_" + safeName;
+      const path = currentUser.id + "/" + folder.id + "/" + objectName;
+      const { error } = await supabaseClient.storage.from(BUCKET)
+        .upload(path, file, { upsert: false, contentType: file.type || "application/octet-stream" });
+      if (error) alert("Не удалось загрузить файл «" + file.name + "»: " + error.message);
+    }
+    input.value = "";
+    await loadFiles(folder);
+  }
+
+  async function openFile(folder, storedName) {
+    const path = currentUser.id + "/" + folder.id + "/" + storedName;
+    const { data, error } = await supabaseClient.storage.from(BUCKET).createSignedUrl(path, 60);
+    if (error) return alert("Не удалось открыть файл: " + error.message);
+    window.open(data.signedUrl, "_blank", "noopener");
+  }
+
+  async function deleteFile(folder, storedName) {
+    if (!confirm("Удалить файл «" + displayFileName(storedName) + "»?")) return;
+    const path = currentUser.id + "/" + folder.id + "/" + storedName;
+    const { error } = await supabaseClient.storage.from(BUCKET).remove([path]);
+    if (error) alert("Не удалось удалить файл: " + error.message);
+    else await loadFiles(folder);
+  }
+
+  $("signInBtn").addEventListener("click", signIn);
+  $("signUpBtn").addEventListener("click", signUp);
+  $("signOutBtn").addEventListener("click", signOut);
+
+  // Проверяем существующую сессию при открытии сайта.
+  try {
+    const client = initClient();
+    client.auth.getSession().then(({ data }) => {
+      currentUser = data.session?.user || null;
+      showApp();
+    });
+  } catch (e) {
+    setAuthStatus(e.message);
+  }
+</script>
+</body>
+</html>
