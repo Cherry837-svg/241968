@@ -6,7 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Моё хранилище</title>
     <!-- Подключаем официальный SDK Appwrite -->
-    <script src="https://jsdelivr.net"></script>
+    <script src="https://jsdelivr.net"> // Инициализация сервисов Appwrite
+    const client = new Appwrite.Client().setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
+    const account = new Appwrite.Account(client);
+    const storage = new Appwrite.Storage(client);
+</script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -135,18 +139,14 @@
     
     // Вставьте сюда ID 5 бакетов, созданных вами в разделе Storage панели Appwrite:
     const BUCKETS = {
-        'images': '6af2441200126d7bde51',
+        'images': '6af2441200126d7bde51' ,
         'video':  '6af2441200126d7bde51',
         'music':  '6af2441200126d7bde51',
         'pdf':    '6af2441200126d7bde51',
         'text':   '6af2441200126d7bde51'
     };
 
-    // Инициализация сервисов Appwrite
-    const client = new Appwrite.Client().setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
-    const account = new Appwrite.Account(client);
-    const storage = new Appwrite.Storage(client);
-
+   
     // =========================================================================
     // 🔐 ЛОГИКА АВТОРИЗАЦИИ
     // =========================================================================
