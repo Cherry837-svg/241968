@@ -1,271 +1,880 @@
- 
- <!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Моё хранилище</title>
-    <!-- Подключаем официальный SDK Appwrite -->
-    <script src="https://jsdelivr.net"> // Инициализация сервисов Appwrite
-    const client = new Appwrite.Client().setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
-    const account = new Appwrite.Account(client);
-    const storage = new Appwrite.Storage(client);
-</script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .section {
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #eee;
-        }
-        .hidden {
-            display: none;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .logout-btn {
-            background-color: #dc3545;
-        }
-        .logout-btn:hover {
-            background-color: #bd2130;
-        }
-        .folder-card {
-            background: #f8f9fa;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            border-left: 4px solid #007bff;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Моё хранилище</title>
+
+<script src="https://cdn.jsdelivr.net/npm/appwrite@29.2.0"></script>
+
+<style>
+:root {
+    --bg: #7779B9;
+    --card: #8587C5;
+    --dark: #202844;
+    --hover: #303F83;
+    --lilac: #B4A1D5;
+    --burgundy: #704567;
+    --white: #ffffff;
+    --muted: #E2E3F5;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 20px;
+    background: var(--bg);
+    color: var(--white);
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    max-width: 850px;
+    margin: auto;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+header h1 {
+    font-size: 30px;
+    margin-bottom: 8px;
+}
+
+header p {
+    color: var(--muted);
+}
+
+.card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.15);
+}
+
+button, select, input {
+    font: inherit;
+}
+
+button {
+    background: var(--dark);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 16px;
+    cursor: pointer;
+    margin: 4px;
+}
+
+button:hover {
+    background: var(--hover);
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin: 7px 0 15px;
+    background: white;
+    color: #222;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 20px;
+}
+
+.tabs button {
+    flex: 1;
+    min-width: 105px;
+}
+
+.tabs button.active {
+    background: var(--burgundy);
+}
+
+.file-card {
+    background: rgba(255,255,255,.15);
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow-wrap: anywhere;
+}
+
+.file-card h3 {
+    margin-top: 0;
+}
+
+.file-card img,
+.file-card video {
+    max-width: 100%;
+    max-height: 350px;
+    border-radius: 8px;
+    display: block;
+    margin: 10px auto;
+}
+
+.file-card audio {
+    width: 100%;
+    margin: 10px 0;
+}
+
+.file-info {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.status {
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 7px;
+    background: rgba(0,0,0,.15);
+    overflow-wrap: anywhere;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.empty {
+    text-align: center;
+    padding: 30px;
+    color: var(--muted);
+}
+
+footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 25px;
+}
+
+@media(max-width:500px) {
+    body {
+        padding: 10px;
+    }
+
+    .card {
+        padding: 14px;
+    }
+
+    header h1 {
+        font-size: 24px;
+    }
+}
+</style>
 </head>
+
 <body>
 
 <div class="container">
+
+<header>
     <h1>📁 Моё хранилище</h1>
-    <p>Личные документы, фотографии и другие файлы</p>
+    <p>Личный архив документов, фотографий, видео и музыки</p>
+</header>
 
-    <!-- БЛОК АВТОРИЗАЦИИ -->
-    <div id="authSection" class="section">
-        <h2>Вход в хранилище</h2>
-        <p>Сначала войдите или создайте аккаунт.</p>
-        
-        <div class="form-group">
-            <label for="email">Email:</label>
-            <input type="email" id="email" placeholder="example@mail.com">
-        </div>
-        <div class="form-group">
-            <label for="password">Пароль:</label>
-            <input type="password" id="password" placeholder="Минимум 8 символов">
-        </div>
-        
-        <button onclick="handleLogin()">Войти</button>
-        <button onclick="handleRegister()" style="background-color: #6c757d;">Создать аккаунт</button>
+<!-- АВТОРИЗАЦИЯ -->
+
+<div class="card" id="authSection">
+
+    <h2>🔐 Вход владельца</h2>
+
+    <p>Просматривать архив можно без авторизации.
+    Для управления файлами необходимо войти.</p>
+
+    <label>Email</label>
+    <input type="email" id="email" placeholder="Ваш Email">
+
+    <label>Пароль</label>
+    <input type="password" id="password" placeholder="Ваш пароль">
+
+    <button onclick="login()">Войти</button>
+
+    <div id="authStatus" class="status hidden"></div>
+
+</div>
+
+<!-- ПАНЕЛЬ ВЛАДЕЛЬЦА -->
+
+<div class="card hidden" id="adminSection">
+
+    <div class="toolbar">
+        <h2>⚙ Управление архивом</h2>
+        <button onclick="logout()">Выйти</button>
     </div>
 
-    <!-- БЛОК ХРАНИЛИЩА (ДОСТУПЕН ПОСЛЕ ВХОДА) -->
-    <div id="storageSection" class="section hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2>Мои папки</h2>
-            <button onclick="handleLogout()" class="logout-btn">Выйти</button>
-        </div>
+    <label>Категория</label>
 
-        <p><small>Файлы сохраняются в облачном хранилище Appwrite. Максимальный размер файла определяется вашим тарифным планом.</small></p>
+    <select id="uploadCategory">
+        <option value="images">📷 Картинки</option>
+        <option value="video">🎬 Видео</option>
+        <option value="music">🎵 Музыка</option>
+        <option value="pdf">📄 Документы</option>
+        <option value="text">📝 Текстовые файлы</option>
+        <option value="archive">📦 ZIP-архивы</option>
+    </select>
 
-        <!-- Форма загрузки в папки -->
-        <div class="folder-card">
-            <h3>Загрузить новый файл</h3>
-            <div class="form-group">
-                <label for="folderSelect">Выберите папку назначения:</label>
-                <select id="folderSelect">
-                    <option value="images">Картинки (images)</option>
-                    <option value="video">Видео (video)</option>
-                    <option value="music">Музыка (music)</option>
-                    <option value="pdf">Документы (pdf)</option>
-                    <option value="text">Текстовые файлы (text)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="fileInput">Выберите файл на устройстве:</label>
-                <input type="file" id="fileInput">
-            </div>
-            <button onclick="uploadFile()">Загрузить в облако</button>
-            <p id="uploadStatus" style="font-weight: bold; color: #007bff;"></p>
-        </div>
+    <label>Выберите файлы</label>
+
+    <input type="file" id="fileInput" multiple>
+
+    <button id="uploadButton" onclick="uploadFiles()">
+        ⬆ Загрузить в облако
+    </button>
+
+    <div id="uploadStatus" class="status hidden"></div>
+
+</div>
+
+<!-- ОСНОВНОЙ АРХИВ -->
+
+<div class="card">
+
+    <div class="toolbar">
+        <h2>☁ Мой архив</h2>
+        <button onclick="loadFiles()">⟳ Обновить</button>
     </div>
+
+    <div class="tabs">
+
+        <button class="active" onclick="selectCategory('all',this)">
+            Все
+        </button>
+
+        <button onclick="selectCategory('images',this)">
+            📷 Фото
+        </button>
+
+        <button onclick="selectCategory('video',this)">
+            🎬 Видео
+        </button>
+
+        <button onclick="selectCategory('music',this)">
+            🎵 Музыка
+        </button>
+
+        <button onclick="selectCategory('pdf',this)">
+            📄 PDF
+        </button>
+
+        <button onclick="selectCategory('text',this)">
+            📝 Текст
+        </button>
+
+        <button onclick="selectCategory('archive',this)">
+            📦 ZIP
+        </button>
+
+    </div>
+
+    <div id="fileList">
+        <div class="empty">Загрузка архива...</div>
+    </div>
+
+    <div id="mainStatus" class="status hidden"></div>
+
+</div>
+
+<footer>
+    Моё хранилище · Appwrite Cloud
+</footer>
+
 </div>
 
 <script>
-    // =========================================================================
-    // ⚙️ НАСТРОЙКА КОНФИГУРАЦИИ (ВСТАВЬТЕ СВОИ ДАННЫЕ СЮДА)
-    // =========================================================================
-    const APPWRITE_ENDPOINT = 'https://fra.cloud.appwrite.io/v1'; // Ваша конечная точка API
-    const APPWRITE_PROJECT_ID = '6af2382700395f15d2f0'; // Ваш ID проекта из Settings
-    
-    // Вставьте сюда ID 5 бакетов, созданных вами в разделе Storage панели Appwrite:
-    const BUCKETS = {
-        'images': '6af2441200126d7bde51' ,
-        'video':  '6af2441200126d7bde51',
-        'music':  '6af2441200126d7bde51',
-        'pdf':    '6af2441200126d7bde51',
-        'text':   '6af2441200126d7bde51'
-    };
 
-   
-    // =========================================================================
-    // 🔐 ЛОГИКА АВТОРИЗАЦИИ
-    // =========================================================================
+// ==========================================
+// 1. НАСТРОЙКИ APPWRITE
+// ==========================================
 
-    // Проверка сессии при загрузке страницы
-    async function checkSession() {
-        try {
-            const user = await account.get();
-            console.log('Пользователь авторизован:', user);
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('storageSection').classList.remove('hidden');
-        } catch (error) {
-            console.log('Пользователь не авторизован');
-            document.getElementById('authSection').classList.remove('hidden');
-            document.getElementById('storageSection').classList.add('hidden');
-        }
+const APPWRITE_ENDPOINT = 'https://fra.cloud.appwrite.io/v1';
+
+const APPWRITE_PROJECT_ID = '6af2382700395f15d2f0';
+
+const BUCKET_ID = '6af2441200126d7bde51';
+
+// ВПИШИТЕ EMAIL ВЛАДЕЛЬЦА.
+// Это дополнительная проверка интерфейса,
+// но не замена серверным разрешениям Appwrite.
+
+const ADMIN_EMAIL = 'ВПИШИТЕ_СВОЙ_EMAIL';
+
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
+// ==========================================
+// 2. ПОДКЛЮЧЕНИЕ
+// ==========================================
+
+const client = new Appwrite.Client()
+    .setEndpoint(APPWRITE_ENDPOINT)
+    .setProject(APPWRITE_PROJECT_ID);
+
+const account = new Appwrite.Account(client);
+const storage = new Appwrite.Storage(client);
+
+const { ID, Query } = Appwrite;
+
+let currentUser = null;
+let currentCategory = 'all';
+let allFiles = [];
+
+// ==========================================
+// 3. КАТЕГОРИИ
+// ==========================================
+
+const categories = {
+    images: 'Картинки',
+    video: 'Видео',
+    music: 'Музыка',
+    pdf: 'Документы',
+    text: 'Текстовые файлы',
+    archive: 'ZIP-архивы'
+};
+
+// ==========================================
+// 4. ОПРЕДЕЛЕНИЕ КАТЕГОРИИ
+// ==========================================
+
+function getCategory(file) {
+
+    return file.folder || 'other';
+
+}
+
+function formatSize(bytes) {
+
+    if (bytes < 1024) return bytes + ' Б';
+
+    if (bytes < 1024 * 1024)
+        return (bytes / 1024).toFixed(1) + ' КБ';
+
+    return (bytes / (1024 * 1024)).toFixed(2) + ' МБ';
+
+}
+
+function formatDate(date) {
+
+    return new Date(date).toLocaleString('ru-RU');
+
+}
+
+// ==========================================
+// 5. СООБЩЕНИЯ
+// ==========================================
+
+function showMessage(id, text) {
+
+    const element = document.getElementById(id);
+
+    element.textContent = text;
+
+    element.classList.remove('hidden');
+
+}
+
+function hideMessage(id) {
+
+    document.getElementById(id).classList.add('hidden');
+
+}
+
+// ==========================================
+// 6. ПРОВЕРКА СЕССИИ
+// ==========================================
+
+async function checkSession() {
+
+    try {
+
+        currentUser = await account.get();
+
+        updateInterface();
+
+    } catch (error) {
+
+        currentUser = null;
+
+        updateInterface();
+
     }
 
-    // Вход в систему
-    async function handleLogin() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+}
 
-        if (!email || !password) {
-            alert('Заполните все поля!');
-            return;
-        }
+function isAdmin() {
 
-        try {
-            await account.createEmailPasswordSession(email, password);
-            alert('Успешный вход!');
-            checkSession();
-        } catch (error) {
-            alert('Ошибка входа: ' + error.message);
-        }
+    return currentUser &&
+        ADMIN_EMAIL !== 'ВПИШИТЕ_СВОЙ_EMAIL' &&
+        currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+}
+
+function updateInterface() {
+
+    const admin = isAdmin();
+
+    document.getElementById('authSection')
+        .classList.toggle('hidden', admin);
+
+    document.getElementById('adminSection')
+        .classList.toggle('hidden', !admin);
+
+}
+
+// ==========================================
+// 7. ВХОД
+// ==========================================
+
+async function login() {
+
+    const email = document.getElementById('email').value.trim();
+
+    const password = document.getElementById('password').value;
+
+    if (!email || !password) {
+
+        showMessage('authStatus', 'Заполните Email и пароль.');
+
+        return;
+
     }
 
-    // Регистрация аккаунта
-    async function handleRegister() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+    try {
 
-        if (!email || !password) {
-            alert('Заполните все поля!');
-            return;
-        }
+        await account.createEmailPasswordSession({
+            email,
+            password
+        });
 
-        if (password.length < 8) {
-            alert('Пароль должен содержать минимум 8 символов!');
-            return;
-        }
+        currentUser = await account.get();
 
-        try {
-            // Генерируем случайное имя и регистрируем уникального пользователя
-            await account.create(Appwrite.ID.unique(), email, password, "Пользователь Хранилища");
-            alert('Аккаунт успешно создан! Выполняется автоматический вход...');
-            await account.createEmailPasswordSession(email, password);
-            checkSession();
-        } catch (error) {
-            alert('Ошибка регистрации: ' + error.message);
-        }
-    }
+        if (!isAdmin()) {
 
-    // Выход из системы
-    async function handleLogout() {
-        try {
-            await account.deleteSession('current');
-            alert('Вы вышли из системы.');
-            checkSession();
-        } catch (error) {
-            alert('Ошибка при выходе: ' + error.message);
-        }
-    }
+            await account.deleteSession({
+                sessionId: 'current'
+            });
 
-    // =========================================================================
-    // 📤 ЛОГИКА ЗАГРУЗКИ ФАЙЛОВ
-    // =========================================================================
-    async function uploadFile() {
-        const fileInput = document.getElementById('fileInput');
-        const folderSelect = document.getElementById('folderSelect');
-        const statusText = document.getElementById('uploadStatus');
+            currentUser = null;
 
-        if (!fileInput.files.length) {
-            alert('Пожалуйста, выберите файл!');
-            return;
-        }
+            updateInterface();
 
-        const file = fileInput.files[0];
-        const selectedFolder = folderSelect.value;
-        const targetBucketId = BUCKETS[selectedFolder];
-
-        if (!targetBucketId || targetBucketId.startsWith('ВСТАВЬТЕ_ID')) {
-            alert('Критическая ошибка: Не настроен ID бакета для папки ' + selectedFolder);
-            return;
-        }
-
-        statusText.innerText = 'Загрузка файла в облако...';
-
-        try {
-            const response = await storage.createFile(
-                targetBucketId,
-                Appwrite.ID.unique(), // Генерация случайного имени файла внутри системы хранения
-                file
+            showMessage(
+                'authStatus',
+                'Этот аккаунт не является владельцем архива.'
             );
 
-            statusText.innerText = `Успешно загружено! Файл сохранен в папку "${selectedFolder}".`;
-            console.log('Ответ Appwrite:', response);
-            fileInput.value = ''; // Очищаем поле выбора файла
-        } catch (error) {
-            statusText.innerText = '';
-            alert('Не удалось загрузить файл: ' + error.message);
-            console.error(error);
+            return;
+
         }
+
+        updateInterface();
+
+        hideMessage('authStatus');
+
+        await loadFiles();
+
+    } catch (error) {
+
+        showMessage('authStatus', 'Ошибка входа: ' + error.message);
+
     }
 
-    // Запуск проверки статуса при открытии страницы
-    document.addEventListener('DOMContentLoaded', checkSession);
+}
+
+// ==========================================
+// 8. ВЫХОД
+// ==========================================
+
+async function logout() {
+
+    try {
+
+        await account.deleteSession({
+            sessionId: 'current'
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+    currentUser = null;
+
+    updateInterface();
+
+    await loadFiles();
+
+}
+
+// ==========================================
+// 9. ЗАГРУЗКА ФАЙЛОВ
+// ==========================================
+
+async function uploadFiles() {
+
+    if (!isAdmin()) {
+
+        alert('Нет доступа к загрузке.');
+
+        return;
+
+    }
+
+    const input = document.getElementById('fileInput');
+
+    const category = document.getElementById('uploadCategory').value;
+
+    const files = Array.from(input.files);
+
+    if (!files.length) {
+
+        alert('Выберите файлы.');
+
+        return;
+
+    }
+
+    const button = document.getElementById('uploadButton');
+
+    button.disabled = true;
+
+    let success = 0;
+
+    let errors = 0;
+
+    showMessage('uploadStatus', 'Начинаем загрузку...');
+
+    for (let i = 0; i < files.length; i++) {
+
+        const file = files[i];
+
+        if (file.size > MAX_FILE_SIZE) {
+
+            errors++;
+
+            showMessage(
+                'uploadStatus',
+                `Пропущен ${file.name}: размер превышает 50 МБ.`
+            );
+
+            continue;
+
+        }
+
+        try {
+
+            await storage.createFile({
+                bucketId: BUCKET_ID,
+                fileId: ID.unique(),
+                file: file,
+                folder: category
+            });
+
+            success++;
+
+            showMessage(
+                'uploadStatus',
+                `Загружено ${success} из ${files.length}: ${file.name}`
+            );
+
+        } catch (error) {
+
+            errors++;
+
+            console.error(error);
+
+            showMessage(
+                'uploadStatus',
+                `Ошибка загрузки ${file.name}: ${error.message}`
+            );
+
+        }
+
+    }
+
+    button.disabled = false;
+
+    input.value = '';
+
+    showMessage(
+        'uploadStatus',
+        `Загрузка завершена. Успешно: ${success}. Ошибок: ${errors}.`
+    );
+
+    await loadFiles();
+
+}
+
+// ==========================================
+// 10. ПОЛУЧЕНИЕ СПИСКА ФАЙЛОВ
+// ==========================================
+
+async function loadFiles() {
+
+    const list = document.getElementById('fileList');
+
+    list.innerHTML = '<div class="empty">Загрузка...</div>';
+
+    try {
+
+        const response = await storage.listFiles({
+            bucketId: BUCKET_ID,
+            queries: [
+                Query.limit(100),
+                Query.orderDesc('$createdAt')
+            ]
+        });
+
+        allFiles = response.files || [];
+
+        renderFiles();
+
+    } catch (error) {
+
+        console.error(error);
+
+        list.innerHTML = `
+            <div class="empty">
+                Не удалось получить список файлов.<br><br>
+                ${escapeHTML(error.message)}
+                <br><br>
+                Проверьте разрешение Read в настройках Bucket.
+            </div>
+        `;
+
+    }
+
+}
+
+// ==========================================
+// 11. ВЫБОР КАТЕГОРИИ
+// ==========================================
+
+function selectCategory(category, button) {
+
+    currentCategory = category;
+
+    document.querySelectorAll('.tabs button')
+        .forEach(btn => btn.classList.remove('active'));
+
+    button.classList.add('active');
+
+    renderFiles();
+
+}
+
+// ==========================================
+// 12. БЕЗОПАСНЫЙ ВЫВОД ТЕКСТА
+// ==========================================
+
+function escapeHTML(value) {
+
+    return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    })[char]);
+
+}
+
+// ==========================================
+// 13. ОТОБРАЖЕНИЕ ФАЙЛОВ
+// ==========================================
+
+function renderFiles() {
+
+    const list = document.getElementById('fileList');
+
+    list.innerHTML = '';
+
+    const files = allFiles.filter(file => {
+
+        return currentCategory === 'all' ||
+            getCategory(file) === currentCategory;
+
+    });
+
+    if (!files.length) {
+
+        list.innerHTML = `
+            <div class="empty">
+                Здесь пока нет файлов.
+            </div>
+        `;
+
+        return;
+
+    }
+
+    files.forEach(file => {
+
+        const card = document.createElement('div');
+
+        card.className = 'file-card';
+
+        const category = getCategory(file);
+
+        const name = escapeHTML(file.name);
+
+        const viewURL = storage.getFileView({
+            bucketId: BUCKET_ID,
+            fileId: file.$id
+        });
+
+        const downloadURL = storage.getFileDownload({
+            bucketId: BUCKET_ID,
+            fileId: file.$id
+        });
+
+        let preview = '';
+
+        if (category === 'images') {
+
+            preview = `
+                <img src="${viewURL}"
+                     alt="${name}"
+                     loading="lazy">
+            `;
+
+        } else if (category === 'video') {
+
+            preview = `
+                <video controls preload="metadata">
+                    <source src="${viewURL}">
+                    Ваш браузер не поддерживает видео.
+                </video>
+            `;
+
+        } else if (category === 'music') {
+
+            preview = `
+                <audio controls preload="none">
+                    <source src="${viewURL}">
+                </audio>
+            `;
+
+        } else if (category === 'pdf') {
+
+            preview = `
+                <a href="${viewURL}" target="_blank"
+                   rel="noopener noreferrer">
+                   📄 Открыть PDF
+                </a>
+            `;
+
+        }
+
+        card.innerHTML = `
+            <h3>${name}</h3>
+
+            ${preview}
+
+            <div class="file-info">
+                Категория: ${escapeHTML(categories[category] || 'Другое')}
+                <br>
+                Размер: ${formatSize(file.sizeOriginal)}
+                <br>
+                Дата: ${formatDate(file.$createdAt)}
+            </div>
+
+            <div>
+                <a href="${downloadURL}" download="${name}">
+                    <button>⬇ Скачать</button>
+                </a>
+
+                ${isAdmin() ? `
+                    <button class="delete-button">
+                        🗑 Удалить
+                    </button>
+                ` : ''}
+            </div>
+        `;
+
+        if (isAdmin()) {
+
+            card.querySelector('.delete-button')
+                .addEventListener('click', () => deleteFile(file.$id, file.name));
+
+        }
+
+        list.appendChild(card);
+
+    });
+
+}
+
+// ==========================================
+// 14. УДАЛЕНИЕ ФАЙЛОВ
+// ==========================================
+
+async function deleteFile(fileId, fileName) {
+
+    if (!isAdmin()) return;
+
+    if (!confirm(`Удалить файл "${fileName}"?`)) return;
+
+    try {
+
+        await storage.deleteFile({
+            bucketId: BUCKET_ID,
+            fileId: fileId
+        });
+
+        showMessage('mainStatus', 'Файл успешно удалён.');
+
+        await loadFiles();
+
+    } catch (error) {
+
+        alert('Ошибка удаления: ' + error.message);
+
+    }
+
+}
+
+// ==========================================
+// 15. ЗАПУСК
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', async () => {
+
+    await checkSession();
+
+    await loadFiles();
+
+});
+
 </script>
 
 </body>
 </html>
-
