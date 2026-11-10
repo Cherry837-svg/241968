@@ -428,10 +428,10 @@ async function checkSession() {
 
 }
 
-function isAdmin() {
+function   isAdmin() {
 
-    return currentUser &&
-        ADMIN_EMAIL !== 'stadnyk837@gmail.com' &&
+    return !!currentUser &&
+        currentUser.email &&
         currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
 }
